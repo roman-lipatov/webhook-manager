@@ -18,6 +18,10 @@ export interface TokenIssueRequest {
   fingerprint: string;
 }
 
+export interface TokenIssueResponse {
+  device_session_token: string;
+}
+
 // POST /auth/token/rotate | POST /auth/token/revoke
 export interface FingerprintRequest {
   fingerprint: string;
