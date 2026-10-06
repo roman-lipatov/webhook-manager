@@ -7,7 +7,7 @@ export function getFingerprint(): string {
     return existing;
   }
 
-  const fingerprint = crypto.randomUUID();
+  const fingerprint = crypto.randomUUID().replace(/-/g, '');
   localStorage.setItem(STORAGE_KEY, fingerprint);
 
   return fingerprint;
