@@ -6,13 +6,14 @@ import axios, {
 
 import { getFingerprint } from "@/lib/fingerprint";
 import { useAuthStore } from "@/stores/authStore";
-import { CSRF_HEADER, HTTP_STATUS } from "@/types/types";
+import { CSRF_HEADER, HTTP_STATUS, type User } from "@/types/types";
 
 import { getCsrfToken, readCsrfHeader, setCsrfToken } from "./csrf";
 
 type RetryConfig = InternalAxiosRequestConfig & {
   _authRetry?: boolean;
   _csrfRetry?: boolean;
+  _skipAuthRetry?: boolean;
 };
 
 const baseURL = import.meta.env.VITE_API_BASE_URL ?? "";
@@ -32,6 +33,15 @@ export const api: AxiosInstance = axios.create({
     "X-Requested-With": "XMLHttpRequest",
   },
 });
+
+/** GET /v1/me; skipAuthRetry = no rotate on 401 (bootstrap). */
+export function getMe(skipAuthRetry = false) {
+  const config = skipAuthRetry
+    ? ({ _skipAuthRetry: true } as RetryConfig)
+    : undefined;
+
+  return api.get<User>("/v1/me", config);
+}
 
 export async function ensureCsrf(): Promise<string> {
   const response = await refreshClient.get("/csrf");
@@ -85,6 +95,10 @@ async function retryUnauthorized(
   error: AxiosError,
   config: RetryConfig,
 ) {
+  if (config._skipAuthRetry) {
+    return Promise.reject(error);
+  }
+
   // Already retried once after rotate → session is dead
   if (config._authRetry) {
     useAuthStore.getState().logout();

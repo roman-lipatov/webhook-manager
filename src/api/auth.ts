@@ -1,4 +1,4 @@
-import { api, ensureCsrf } from "./client";
+import { api, ensureCsrf, getMe } from "./client";
 import type { LoginRequest, LoginResponse, TokenIssueRequest, User } from "@/types/types";
 import { useAuthStore } from "@/stores/authStore";
 import { getFingerprint } from "@/lib/fingerprint";
@@ -19,9 +19,9 @@ export async function login(request: LoginRequest): Promise<LoginResponse> {
   return response.data;
 }
 
-export async function fetchMe(): Promise<User> {
+export async function fetchMe(options?: { bootstrap?: boolean }): Promise<User> {
   const { setUser } = useAuthStore.getState();
-  const response = await api.get<User>("/v1/me");
+  const response = await getMe(options?.bootstrap ?? false);
   setUser(response.data);
   return response.data;
 }
