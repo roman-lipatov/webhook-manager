@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
@@ -14,5 +14,10 @@ export default defineConfig({
     alias: {
       "@": path.resolve(projectRoot, "./src"),
     },
+  },
+  test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: ["./src/test/setup.ts"],
   },
 });

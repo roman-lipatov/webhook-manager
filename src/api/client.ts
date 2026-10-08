@@ -34,6 +34,12 @@ export const api: AxiosInstance = axios.create({
   },
 });
 
+/** Used in tests so MSW can match absolute URLs. */
+export function setTestBaseUrl(url: string): void {
+  api.defaults.baseURL = url;
+  refreshClient.defaults.baseURL = url;
+}
+
 /** GET /v1/me; skipAuthRetry = no rotate on 401 (bootstrap). */
 export function getMe(skipAuthRetry = false) {
   const config = skipAuthRetry
@@ -78,6 +84,11 @@ function rotateSession(): Promise<void> {
   });
 
   return rotatePromise;
+}
+
+/** Clears shared rotate lock between tests. */
+export function resetRotateLock(): void {
+  rotatePromise = null;
 }
 
 api.interceptors.request.use((config) => {
