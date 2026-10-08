@@ -56,15 +56,24 @@ function assertCsrf(request: Request) {
   return null;
 }
 
-/** Protected /v1 routes: valid non-expired session cookie. */
+/**
+ * Protected /v1 routes need a valid in-memory session.
+ * Cookie is checked when the browser actually sends it.
+ * MSW Service Worker responses often do not persist Set-Cookie into
+ * document.cookie, so a missing Cookie header alone is not 401.
+ */
 function assertSession(request: Request) {
+  if (!isSessionValid() || db.session === null) {
+    return apiError(
+      HTTP_STATUS.UNAUTHORIZED,
+      "unauthorized",
+      "Unauthenticated",
+    );
+  }
+
   const sessionId = readSessionIdFromCookie(request.headers.get("cookie"));
 
-  if (
-    !isSessionValid() ||
-    db.session === null ||
-    sessionId !== db.session.id
-  ) {
+  if (sessionId !== null && sessionId !== db.session.id) {
     return apiError(
       HTTP_STATUS.UNAUTHORIZED,
       "unauthorized",
