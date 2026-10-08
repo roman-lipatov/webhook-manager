@@ -1,4 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+
+import { AppLayout } from "@/components/AppLayout";
 import { AuthBootstrap } from "@/components/AuthBootstrap";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
@@ -27,7 +29,9 @@ function App() {
           <Route path="/login" element={<LoginRoute />} />
 
           <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<WebhookPage />} />
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<WebhookPage />} />
+            </Route>
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
