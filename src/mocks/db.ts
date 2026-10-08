@@ -14,6 +14,7 @@ export const demoUser: User = {
 
 const SESSION_TTL_MS = 30_000;
 const SESSION_COOKIE = "wm_session";
+const SESSION_STORAGE_KEY = "wm_mock_session";
 
 export type Session = {
   id: string;
@@ -26,11 +27,49 @@ export type PendingDeviceSession = {
   fingerprint: string;
 };
 
-/** Mutable in-memory store — resets on full page reload. */
+function readStoredSession(): Session | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (raw === null) {
+      return null;
+    }
+
+    const session = JSON.parse(raw) as Session;
+    if (
+      typeof session.id !== "string" ||
+      typeof session.fingerprint !== "string" ||
+      typeof session.expiresAt !== "number" ||
+      session.expiresAt <= Date.now()
+    ) {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      return null;
+    }
+
+    return session;
+  } catch {
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    return null;
+  }
+}
+
+function persistSession(session: Session | null): void {
+  if (session === null) {
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    return;
+  }
+
+  sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+}
+
+/**
+ * In-memory mock DB. Session is also mirrored to sessionStorage
+ * so AuthBootstrap / F5 still work within the 30s TTL
+ * (MSW does not reliably persist Set-Cookie).
+ */
 export const db = {
   csrfToken: null as string | null,
   pendingDeviceSession: null as PendingDeviceSession | null,
-  session: null as Session | null,
+  session: readStoredSession(),
   webhooks: [
     {
       id: "wh_1",
@@ -90,6 +129,7 @@ export function startSession(fingerprint: string): Session {
   };
   db.session = session;
   db.pendingDeviceSession = null;
+  persistSession(session);
   return session;
 }
 
@@ -102,6 +142,7 @@ export function rotateSession(fingerprint: string): Session | null {
     ...db.session,
     expiresAt: Date.now() + SESSION_TTL_MS,
   };
+  persistSession(db.session);
 
   return db.session;
 }
@@ -109,6 +150,7 @@ export function rotateSession(fingerprint: string): Session | null {
 export function clearSession(): void {
   db.session = null;
   db.pendingDeviceSession = null;
+  persistSession(null);
 }
 
 export function isSessionValid(now = Date.now()): boolean {
